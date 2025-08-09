@@ -75,9 +75,8 @@
 		});
 		session.play();
 	}
-	onMount(() => {
-		main().catch((error) => {
-			console.error('Error initializing music session:', error);
-		});
-	});
 </script>
+
+
+<input bind:value={apiKey} placeholder="Enter your API key...">
+<button onclick={main}>Continue</button>
