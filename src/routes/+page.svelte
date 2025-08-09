@@ -3,10 +3,11 @@
 	import { GoogleGenAI, Type, type LiveMusicSession } from '@google/genai';
   import Canvas from '$lib/components/Canvas.svelte';
   import {prompt} from '$lib/prompt'
+  import {safetySettings} from '$lib/prompt'
 
 	let apiKey = $state("");
   let lastEditTime = 0;
-  const editInterval = 1000 * 2.5; // 2.5 seconds
+  const editInterval = 1000 * 4; // 4 seconds
 
   let session: LiveMusicSession;
   let ai: GoogleGenAI;
@@ -87,12 +88,13 @@
     const now = Date.now();
     if (now - lastEditTime < editInterval) {
       // TODO: Set interval and check later
+      return
     };
     lastEditTime = now;
     // Ask Gemini to clasify the image
     if (!ai) return;
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.5-flash-lite",
       contents: [
         {
           inlineData: {
@@ -105,6 +107,7 @@
         }
       ],
       config: {
+        safetySettings,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
