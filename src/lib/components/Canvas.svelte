@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { doSegmentsIntersect } from "$lib/utils";
   import { onMount } from "svelte";
 
   const { onCanvasUpdate }: { onCanvasUpdate: (imageBase64: string) => void } =
@@ -25,10 +26,12 @@
 
   let hue = $state(0);
 
+  let erasing = false;
+
   const hueOverrides: Record<number, string> = {
-    0: 'black',
-    360: 'white'
-  }
+    0: "black",
+    360: "white",
+  };
 
   function getHueColor() {
     return hueOverrides[hue] || `hsl(${hue}, 100%, 50%)`;
@@ -49,9 +52,7 @@
       ctx.lineWidth = path.width;
       ctx.stroke();
     });
-    onCanvasUpdate(
-      canvas.toDataURL('image/png')
-    );
+    onCanvasUpdate(canvas.toDataURL("image/png"));
   }
 
   function mousemove(event: MouseEvent) {
@@ -62,14 +63,30 @@
     const y = event.clientY - rect.top;
 
     if (lastPoint) {
-      const path = paths[paths.length - 1];
-      if (
-        path.points[path.points.length - 1].x === x &&
-        path.points[path.points.length - 1].y === y
-      ) {
-        return; // Prevent adding duplicate points
+      if (erasing) {
+        // Determine if the line formed by (x, y) and lastPoint is intersecting with any paths
+        const line = { start: lastPoint, end: { x, y } };
+        for (const path of paths) {
+          // Check each segment of the path for intersection
+          for (let i = 1; i < path.points.length; i++) {
+            const segment = { start: path.points[i - 1], end: path.points[i] };
+            if (doSegmentsIntersect(line.start, line.end, segment.start, segment.end)) {
+              // If it is, remove the path
+              paths = paths.filter((p) => p !== path);
+              break;
+            }
+          }
+        }
+      } else {
+        const path = paths[paths.length - 1];
+        if (
+          path.points[path.points.length - 1].x === x &&
+          path.points[path.points.length - 1].y === y
+        ) {
+          return; // Prevent adding duplicate points
+        }
+        path.points.push({ x, y });
       }
-      path.points.push({ x, y });
     }
 
     lastPoint = { x, y };
@@ -86,7 +103,14 @@
     const y = event.clientY - rect.top;
 
     lastPoint = { x, y };
-    paths.push({ points: [lastPoint], color: getHueColor(), width: brushSize * 4 });
+
+    if (erasing) return;
+
+    paths.push({
+      points: [lastPoint],
+      color: getHueColor(),
+      width: brushSize * 4,
+    });
     draw();
   }
 
@@ -112,7 +136,7 @@
   onmouseup={mouseup}
   onmouseout={mouseup}
   onblur={mouseup}
-  ondragstart={()=>{}}
+  ondragstart={() => {}}
   draggable="false"
 ></canvas>
 
@@ -123,30 +147,54 @@
   style={`--thumb-color: ${getHueColor()}`}
   min="0"
   max="360"
+  class="border rounded-xl"
 />
 
 <div class="flex">
-  <button onclick={()=>{brushSize = 1}} aria-label="Small brush">
+  <button
+    onclick={() => {
+      brushSize = 1;
+      erasing = false;
+    }}
+    aria-label="Small brush"
+  >
     <svg viewBox="0 0 6 6" class="w-4">
       <circle cx="3" cy="3" r="1" fill="black" />
     </svg>
   </button>
-  <button onclick={()=>{brushSize = 2}} aria-label="Medium brush">
+  <button
+    onclick={() => {
+      brushSize = 2;
+      erasing = false;
+    }}
+    aria-label="Medium brush"
+  >
     <svg viewBox="0 0 6 6" class="w-4">
       <circle cx="3" cy="3" r="2" fill="black" />
     </svg>
   </button>
-  <button onclick={()=>{brushSize = 3}} aria-label="Large brush">
+  <button
+    onclick={() => {
+      brushSize = 3;
+      erasing = false;
+    }}
+    aria-label="Large brush"
+  >
     <svg viewBox="0 0 6 6" class="w-4">
       <circle cx="3" cy="3" r="3" fill="black" />
     </svg>
   </button>
 </div>
-<button onclick={()=>{/* TODO: Erase */}} aria-label="Erase">
-    <svg viewBox="0 0 6 6" class="w-4">
-      <circle cx="3" cy="3" r="3" stroke="black" fill="white" />
-    </svg>
-  </button>  
+<button
+  onclick={() => {
+    erasing = true;
+  }}
+  aria-label="Erase"
+>
+  <svg viewBox="0 0 6 6" class="w-4">
+    <circle cx="3" cy="3" r="3" stroke="black" fill="white" />
+  </svg>
+</button>
 
 <style>
   canvas {
@@ -156,6 +204,18 @@
 
   input#color {
     accent-color: var(--thumb-color);
+    background-image: linear-gradient(
+      to right,
+      rgb(0, 0, 0),
+      hsl(0, 75%, 50%),
+      hsl(60, 75%, 50%),
+      hsl(120, 75%, 50%),
+      hsl(180, 75%, 50%),
+      hsl(240, 75%, 50%),
+      hsl(300, 75%, 50%),
+      hsl(360, 75%, 50%),
+      rgb(255, 255, 255)
+    );
   }
 
   /* Webkit browsers (Chrome, Safari, Edge) */

@@ -6,7 +6,7 @@
 
 	let apiKey = $state("");
   let lastEditTime = 0;
-  const editInterval = 1000 * 5; // 5 seconds
+  const editInterval = 1000 * 2.5; // 2.5 seconds
 
   let session: LiveMusicSession;
   let ai: GoogleGenAI;
@@ -85,7 +85,9 @@
 
   async function canvasUpdate(imageData: string) {
     const now = Date.now();
-    if (now - lastEditTime < editInterval) return;
+    if (now - lastEditTime < editInterval) {
+      // TODO: Set interval and check later
+    };
     lastEditTime = now;
     // Ask Gemini to clasify the image
     if (!ai) return;
