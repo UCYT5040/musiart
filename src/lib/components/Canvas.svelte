@@ -25,6 +25,17 @@
 
   let hue = $state(0);
 
+  const hueOverrides: Record<number, string> = {
+    0: 'black',
+    360: 'white'
+  }
+
+  function getHueColor() {
+    return hueOverrides[hue] || `hsl(${hue}, 100%, 50%)`;
+  }
+
+  let brushSize = 2;
+
   function draw() {
     if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -75,7 +86,7 @@
     const y = event.clientY - rect.top;
 
     lastPoint = { x, y };
-    paths.push({ points: [lastPoint], color: `hsl(${hue}, 100%, 50%)`, width: 2 });
+    paths.push({ points: [lastPoint], color: getHueColor(), width: brushSize * 4 });
     draw();
   }
 
@@ -106,12 +117,36 @@
 ></canvas>
 
 <input
+  id="color"
   type="range"
   bind:value={hue}
-  style={`--thumb-color: hsl(${hue}, 100%, 50%)`}
+  style={`--thumb-color: ${getHueColor()}`}
   min="0"
   max="360"
 />
+
+<div class="flex">
+  <button onclick={()=>{brushSize = 1}} aria-label="Small brush">
+    <svg viewBox="0 0 6 6" class="w-4">
+      <circle cx="3" cy="3" r="1" fill="black" />
+    </svg>
+  </button>
+  <button onclick={()=>{brushSize = 2}} aria-label="Medium brush">
+    <svg viewBox="0 0 6 6" class="w-4">
+      <circle cx="3" cy="3" r="2" fill="black" />
+    </svg>
+  </button>
+  <button onclick={()=>{brushSize = 3}} aria-label="Large brush">
+    <svg viewBox="0 0 6 6" class="w-4">
+      <circle cx="3" cy="3" r="3" fill="black" />
+    </svg>
+  </button>
+</div>
+<button onclick={()=>{/* TODO: Erase */}} aria-label="Erase">
+    <svg viewBox="0 0 6 6" class="w-4">
+      <circle cx="3" cy="3" r="3" stroke="black" fill="white" />
+    </svg>
+  </button>  
 
 <style>
   canvas {
@@ -119,12 +154,12 @@
     border: solid 1px blue;
   }
 
-  input[type="range"] {
+  input#color {
     accent-color: var(--thumb-color);
   }
 
   /* Webkit browsers (Chrome, Safari, Edge) */
-  input[type="range"]::-webkit-slider-thumb {
+  input#color::-webkit-slider-thumb {
     background-color: var(--thumb-color);
     border: none; /* Remove default border */
     border-radius: 50%; /* Make it circular */
@@ -135,7 +170,7 @@
   }
 
   /* Firefox */
-  input[type="range"]::-moz-range-thumb {
+  input#color::-moz-range-thumb {
     background-color: var(--thumb-color);
     border: none; /* Remove default border */
     border-radius: 50%; /* Make it circular */
@@ -145,7 +180,7 @@
   }
 
   /* Internet Explorer */
-  input[type="range"]::-ms-thumb {
+  input#color::-ms-thumb {
     background-color: var(--thumb-color);
     border: none;
     border-radius: 50%;
