@@ -41,7 +41,8 @@
 
   function draw() {
     if (!canvas || !ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     paths.forEach((path) => {
       ctx.beginPath();
       ctx.moveTo(path.points[0].x, path.points[0].y);
@@ -57,6 +58,7 @@
 
   function mousemove(event: MouseEvent) {
     if (!mouseDown) return;
+    event.preventDefault();
 
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -70,7 +72,14 @@
           // Check each segment of the path for intersection
           for (let i = 1; i < path.points.length; i++) {
             const segment = { start: path.points[i - 1], end: path.points[i] };
-            if (doSegmentsIntersect(line.start, line.end, segment.start, segment.end)) {
+            if (
+              doSegmentsIntersect(
+                line.start,
+                line.end,
+                segment.start,
+                segment.end
+              )
+            ) {
               // If it is, remove the path
               paths = paths.filter((p) => p !== path);
               break;
@@ -119,6 +128,80 @@
     lastPoint = null;
   }
 
+  function touchmove(event: TouchEvent) {
+    if (!mouseDown) return;
+    event.preventDefault();
+
+    const rect = canvas.getBoundingClientRect();
+    const touch = event.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    if (lastPoint) {
+      if (erasing) {
+        // Determine if the line formed by (x, y) and lastPoint is intersecting with any paths
+        const line = { start: lastPoint, end: { x, y } };
+        for (const path of paths) {
+          // Check each segment of the path for intersection
+          for (let i = 1; i < path.points.length; i++) {
+            const segment = { start: path.points[i - 1], end: path.points[i] };
+            if (
+              doSegmentsIntersect(
+                line.start,
+                line.end,
+                segment.start,
+                segment.end
+              )
+            ) {
+              // If it is, remove the path
+              paths = paths.filter((p) => p !== path);
+              break;
+            }
+          }
+        }
+      } else {
+        const path = paths[paths.length - 1];
+        if (
+          path.points[path.points.length - 1].x === x &&
+          path.points[path.points.length - 1].y === y
+        ) {
+          return; // Prevent adding duplicate points
+        }
+        path.points.push({ x, y });
+      }
+    }
+
+    lastPoint = { x, y };
+    draw();
+  }
+
+  function touchstart(event: TouchEvent) {
+    event.preventDefault();
+    mouseDown = true;
+
+    const rect = canvas.getBoundingClientRect();
+    const touch = event.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    lastPoint = { x, y };
+
+    if (erasing) return;
+
+    paths.push({
+      points: [lastPoint],
+      color: getHueColor(),
+      width: brushSize * 4,
+    });
+    draw();
+  }
+
+  function touchend(event: TouchEvent) {
+    event.preventDefault();
+    mouseDown = false;
+    lastPoint = null;
+  }
+
   onMount(() => {
     if (!canvas) return;
     const _ctx = canvas.getContext("2d");
@@ -136,8 +219,12 @@
   onmouseup={mouseup}
   onmouseout={mouseup}
   onblur={mouseup}
-  ondragstart={() => {}}
+  ontouchstart={touchstart}
+  ontouchmove={touchmove}
+  ontouchend={touchend}
   draggable="false"
+  width="800"
+  height="600"
 ></canvas>
 
 <input
