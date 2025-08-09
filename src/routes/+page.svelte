@@ -1,11 +1,18 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { GoogleGenAI, type LiveMusicSession } from '@google/genai';
+	import { GoogleGenAI, Type, type LiveMusicSession } from '@google/genai';
+  import Canvas from '$lib/components/Canvas.svelte';
+  import {prompt} from '$lib/prompt'
 
 	let apiKey = $state("");
+  let lastEditTime = 0;
+  const editInterval = 1000 * 5; // 5 seconds
+
+  let session: LiveMusicSession;
+  let ai: GoogleGenAI;
 
 	async function main() {
-		const ai = new GoogleGenAI({
+		ai = new GoogleGenAI({
 			apiVersion: 'v1alpha',
 			apiKey,
 		});
@@ -15,7 +22,7 @@
 		const frameCount = 1024; // Replace with actual frame count
 		const audioBuffer = audioCtx.createBuffer(channels, frameCount, sampleRate);
 		let nextPlayTime = audioCtx.currentTime;
-		const session: LiveMusicSession = await ai.live.music.connect({
+		session = await ai.live.music.connect({
 			model: 'models/lyria-realtime-exp',
 			callbacks: {
 				onmessage: (message) => {
@@ -68,15 +75,59 @@
 			}
 		});
 		await session.setWeightedPrompts({
-			weightedPrompts: [{ text: 'hard techno', weight: 1.0 }]
+			weightedPrompts: [{ text: '', weight: 1.0 }]
 		});
 		await session.setMusicGenerationConfig({
 			musicGenerationConfig: { bpm: 90, temperature: 1.0 }
 		});
 		session.play();
 	}
+
+  async function canvasUpdate(imageData: string) {
+    const now = Date.now();
+    if (now - lastEditTime < editInterval) return;
+    lastEditTime = now;
+    // Ask Gemini to clasify the image
+    if (!ai) return;
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-lite",
+      contents: [
+        {
+          inlineData: {
+            mimeType: "image/png",
+            data: imageData.replace('data:image/png;base64,', '')
+          },
+        },
+        {
+          text: prompt
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            description: {
+              type: Type.STRING,
+            },
+            keywords: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.STRING,
+              },
+            },
+          },
+        },
+      },
+    });
+    const result = JSON.parse(response.text);
+    await session.setWeightedPrompts({
+			weightedPrompts: [{ text: result.keywords.join(','), weight: 1.0 }]
+		});
+  }
 </script>
 
 
 <input bind:value={apiKey} placeholder="Enter your API key...">
 <button onclick={main}>Continue</button>
+<Canvas onCanvasUpdate={canvasUpdate} />
