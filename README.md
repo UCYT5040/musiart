@@ -1,38 +1,56 @@
-# sv
+# MusiArt
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+An interactive web application that generates music using Google's GenAI, featuring a canvas-based interface for a unique user experience.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Real-time music generation from your drawings using Google's GenAI
+- Interactive canvas interface
+- Responsive design with Tailwind CSS
+- Built with SvelteKit and TypeScript
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Prerequisites
 
-# create a new project in my-app
-npx sv create my-app
-```
+- Node.js (v18 or later)
+- pnpm (recommended) or npm
+- Google GenAI API key
 
-## Developing
+## Getting Started
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+1. Clone the repository
+   ```sh
+   git clone https://github.com/yourusername/musiart.git
+   cd musiart
+   ```
 
-```sh
-npm run dev
+2. Install dependencies
+   ```sh
+   pnpm install
+   # or
+   npm install
+   ```
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+3. Start the development server
+   ```sh
+   pnpm dev
+   # or
+   npm run dev
+   ```
 
-## Building
+4. Open [http://localhost:5173](http://localhost:5173) in your browser
 
-To create a production version of your app:
+## Available Scripts
 
-```sh
-npm run build
-```
+- `dev` - Start development server
+- `build` - Build for production
+- `preview` - Preview production build
+- `check` - Run type checking
+- `format` - Format code with Prettier
+- `lint` - Lint code with ESLint
 
-You can preview the production build with `npm run preview`.
+## Tech Stack
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- [SvelteKit](https://kit.svelte.dev/) - Frontend framework
+- [TypeScript](https://www.typescriptlang.org/) - Type checking
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Google GenAI](https://ai.google.dev/) - AI music generation
